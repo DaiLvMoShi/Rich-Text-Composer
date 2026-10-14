@@ -3,7 +3,6 @@
 A WYSIWYG rich-text styling tool for the Unreal Editor — pick a `RichTextStyleRow` DataTable,
 style your text visually, and output markup the engine's `RichTextBlock` understands.
 
-> 中文文档: [README.zh-CN.md](README.zh-CN.md)
 
 ---
 
