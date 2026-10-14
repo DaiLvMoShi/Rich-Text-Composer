@@ -2,12 +2,13 @@
 
 ## 它解决什么问题
 
-引擎自带的 `RichTextBlock` 要用样式，得先做一张 `RichTextStyleRow` 数据表，再在文本里**手写** `<样式行名>文字</>` 标记，既容易写错也看不见效果。
+引擎自带的 `RichTextBlock` 要用样式，得先做一张 `RichTextStyleRow` 数据表，再在文本里**手写** `<样式行名>内容</>` 标记，既容易写错也看不见效果。
 
 本插件在编辑器里加一个**独立工具窗口**（形态类似 Fab / Bridge）：
 
 ```
-工具栏按钮 [Rich Text]  +  主菜单 Window → Rich Text Composer  →  可停靠页签
+<img width="799" height="162" alt="image" src="https://github.com/user-attachments/assets/68a8438b-3fda-4f02-9835-ca78fef3c8a2" />
+
 ```
 
 窗口里是**所见即所得的编辑区**：直接打字、选中文字点样式，**当场就能看到最终效果**（用数据表里的真实样式渲染），完事一键输出标记文本。
