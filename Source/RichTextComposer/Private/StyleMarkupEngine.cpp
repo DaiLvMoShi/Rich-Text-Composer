@@ -31,7 +31,7 @@ bool FRichTextMarkupRules::IsValidStyleName(const FName& StyleName)
 
 FText FRichTextMarkupRules::GetNameRequirementText()
 {
-	return LOCTEXT("NameRequirement", "Row names may only contain letters, digits, underscore, dot and hyphen (engine markup parser limitation)");
+	return LOCTEXT("NameRequirement", "行名只能包含字母、数字、下划线、点、连字符（引擎标记解析器限制）");
 }
 
 FString FRichTextMarkupRules::EscapeText(const FString& InText)
@@ -78,7 +78,7 @@ bool FRichTextMarkupEngine::IsStyleNameChar(TCHAR Char)
 
 bool FRichTextMarkupEngine::IsWellFormedAttributeString(const FString& Attributes)
 {
-	// Manual equivalent of the engine pattern (?: (?:[\w\d\.-]+=(?>"(.*?)")))+
+	// 与引擎正则 (?: (?:[\w\d\.-]+=(?>"(.*?)")))+ 等价的手工校验
 	int32 Pos = 0;
 	const int32 Len = Attributes.Len();
 
@@ -120,7 +120,7 @@ bool FRichTextMarkupEngine::IsWellFormedAttributeString(const FString& Attribute
 		}
 		if (Pos >= Len)
 		{
-			return false; // unterminated quote
+			return false; // 引号未闭合
 		}
 		++Pos;
 	}
@@ -160,7 +160,7 @@ void FRichTextMarkupEngine::ParseMarkupIntoRuns(const FString& Markup, TArray<FR
 	{
 		if (Markup[Pos] == TCHAR('<'))
 		{
-			// Extract the tag name (letters/digits/underscore/dot/hyphen)
+			// 提取标记名（字母/数字/下划线/点/连字符）
 			int32 NameEnd = Pos + 1;
 			while (NameEnd < Len && IsStyleNameChar(Markup[NameEnd]))
 			{
@@ -185,8 +185,8 @@ void FRichTextMarkupEngine::ParseMarkupIntoRuns(const FString& Markup, TArray<FR
 						const int32 CloseIndex = Markup.Find(TEXT("</>"), ESearchCase::CaseSensitive, ESearchDir::FromStart, GtIndex + 1);
 						if (CloseIndex != INDEX_NONE)
 						{
-							// no further '<' is allowed inside the content (the engine does not support nesting either);
-							// the '<' at CloseIndex belongs to the closing tag itself and is not nesting.
+							// 内容中不允许再出现 '<'（引擎同样不支持嵌套）；
+							// CloseIndex 处的 '<' 正是闭合标签自身，不算嵌套。
 							const int32 NestedLt = Markup.Find(TEXT("<"), ESearchCase::CaseSensitive, ESearchDir::FromStart, GtIndex + 1);
 							if (NestedLt == INDEX_NONE || NestedLt >= CloseIndex)
 							{
@@ -205,11 +205,11 @@ void FRichTextMarkupEngine::ParseMarkupIntoRuns(const FString& Markup, TArray<FR
 				}
 			}
 
-			// Not a style tag this tool understands: treat it as plain text (same as the engine)
+			// 不是本工具认识的样式标记：按普通文字处理（与引擎行为一致）
 			bHadUnrecognizedMarkup = true;
 		}
 
-		// Plain text segment: read up to the next '<' (a '<' here is kept as literal text)
+		// 普通文字段：一直取到下一个 '<'（当前字符即使是 '<' 也作为普通文字保留）
 		const int32 NextLtIndex = Markup.Find(TEXT("<"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Pos + 1);
 		if (NextLtIndex == INDEX_NONE)
 		{
@@ -297,7 +297,7 @@ void FRichTextMarkupEngine::ApplyStyleToRange(int32 Start, int32 End, FName Styl
 		return;
 	}
 
-	// Split runs at the range boundaries so [Start, End) aligns with run boundaries
+	// 先在区间边界切开运行段，使 [Start, End) 与运行段边界对齐
 	SplitRunAt(Start);
 	SplitRunAt(End);
 
@@ -317,7 +317,7 @@ void FRichTextMarkupEngine::ApplyStyleToRange(int32 Start, int32 End, FName Styl
 			continue;
 		}
 
-		// Replace semantics: the new range style overwrites the old one
+		// 替换语义：新区间样式直接覆盖旧样式
 		Run.StyleName = StyleName;
 	}
 
@@ -367,7 +367,7 @@ FString FRichTextMarkupEngine::GetMarkupText() const
 			{
 				break;
 			}
-			// Tags cannot span lines: the newline itself stays outside the tag
+			// 标记不能跨行：换行本身放在标记之外
 			Out += TEXT("\n");
 		}
 	}

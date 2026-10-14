@@ -7,8 +7,8 @@
 class SDockTab;
 
 /**
- * Rich Text Composer: entry point of the editor tool plugin.
- * Registers the toolbar button, the Window menu entry and the dockable tool tab.
+ * Rich Text Composer：编辑器工具插件入口。
+ * 负责注册工具栏按钮、Window 主菜单条目与可停靠的独立工具页签。
  */
 class FRichTextComposerModule : public IModuleInterface
 {
@@ -16,7 +16,7 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	/** Opens (or focuses) the tool tab. */
+	/** 打开（或聚焦）工具页签。 */
 	static void OpenComposerTab();
 
 private:

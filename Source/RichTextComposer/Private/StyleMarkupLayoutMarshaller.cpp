@@ -29,7 +29,7 @@ void FStyleMarkupLayoutMarshaller::AppendRunToLine(const TSharedRef<FString>& Li
 		return;
 	}
 
-	// The run text range points into this line model string (same approach as the engine FRichTextLayoutMarshaller)
+	// Run 的文本范围指向"本行"的模型字符串（与引擎 FRichTextLayoutMarshaller 做法一致）
 	const FTextRange ModelRange(LineText->Len(), LineText->Len() + RunText.Len());
 	*LineText += RunText;
 
@@ -39,7 +39,7 @@ void FStyleMarkupLayoutMarshaller::AppendRunToLine(const TSharedRef<FString>& Li
 
 void FStyleMarkupLayoutMarshaller::SetText(const FString& SourceString, FTextLayout& TargetTextLayout)
 {
-	// Reuses the tool markup parser: yields [text + style row name] runs
+	// 复用工具同一套标记解析规则：得到「文本 + 样式行名」的运行段
 	FRichTextMarkupEngine Parser;
 	Parser.SetMarkupText(SourceString);
 
@@ -66,7 +66,7 @@ void FStyleMarkupLayoutMarshaller::SetText(const FString& SourceString, FTextLay
 				break;
 			}
 
-			// Line break: close the current line (keep an empty run on blank lines so the caret works)
+			// 换行：结束当前行（空行也要保留一个空 Run，保证光标可用）
 			if (CurrentLineRuns.Num() == 0)
 			{
 				CurrentLineRuns.Add(FSlateTextRun::Create(FRunInfo(), CurrentLineText, DefaultStyle, FTextRange(0, 0)));

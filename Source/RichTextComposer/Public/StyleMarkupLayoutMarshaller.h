@@ -9,14 +9,14 @@
 class FSlateStyleSet;
 
 /**
- * Lets SMultiLineEditableText render each run with the style named by its <RowName> tag.
+ * 让 SMultiLineEditableText 直接按 <样式行名>标记 渲染每个运行段的样式。
  *
- * Key points (confirmed against the engine implementation):
- *  - the editable text layout is a plain FTextLayout and can hold runs with different styles;
- *  - when text is inserted at the caret, the engine extends the run under the caret (FTextLayout::InsertAt),
- *    so newly typed characters inherit the style at that position with no extra work;
- *  - this marshaller's GetText() serializes the layout runs back into markup,
- *    so the editor content always equals the markup you can hand to a RichTextBlock.
+ * 关键点（已对照 UE 5.8 引擎实现确认）：
+ *  - 可编辑文本的布局本身就是普通的 FTextLayout，可以承载多个不同样式的 Run；
+ *  - 在光标处插入文字时，引擎会扩充光标所在的 Run（FTextLayout::InsertAt），
+ *    因此新输入的文字自动继承该处样式，无需额外处理；
+ *  - 本 Marshaller 的 GetText() 把布局里的 Run 反向序列化回标记文本，
+ *    所以"编辑区内容"始终等于可交给 RichTextBlock 的标记文本。
  */
 class RICHTEXTCOMPOSER_API FStyleMarkupLayoutMarshaller : public ITextLayoutMarshaller
 {
@@ -24,7 +24,7 @@ public:
 	FStyleMarkupLayoutMarshaller();
 	virtual ~FStyleMarkupLayoutMarshaller();
 
-	/** Updates the style source (row name -> FTextBlockStyle) and the default style for untagged text. */
+	/** 更新样式来源（行名 → FTextBlockStyle）与无标记文本使用的默认样式。 */
 	void SetStyles(TSharedPtr<FSlateStyleSet> InStyleSet, const FTextBlockStyle& InDefaultStyle);
 
 	//~ Begin ITextLayoutMarshaller

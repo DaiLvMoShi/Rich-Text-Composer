@@ -22,7 +22,7 @@
 #include "Modules/ModuleManager.h"
 #include "UObject/SoftObjectPath.h"
 #include "Misc/ConfigCacheIni.h"
-#include "RichTextComposerVersionCompat.h" // multi-version support (5.2 - 5.8)
+#include "RichTextComposerVersionCompat.h" // 多版本兼容（5.2 ~ 5.8）
 #include "CoreGlobals.h"
 #include "HAL/PlatformApplicationMisc.h"
 
@@ -30,7 +30,7 @@
 
 namespace
 {
-	/** Loads a DataTable from asset data (prefers the loaded object, otherwise loads by path). */
+	/** 从资产数据加载数据表（优先已加载对象，否则按路径加载）。 */
 	UDataTable* LoadTableFromAssetData(const FAssetData& AssetData)
 	{
 		if (UObject* Asset = AssetData.GetAsset())
@@ -40,7 +40,7 @@ namespace
 		return Cast<UDataTable>(AssetData.ToSoftObjectPath().TryLoad());
 	}
 
-	/** Expected value of the RowStructure asset registry tag. */
+	/** 数据表资产注册表里 RowStructure 标签的目标值。 */
 	FString GetWantedRowStructTagValue()
 	{
 		return FRichTextStyleRow::StaticStruct()->GetPathName();
@@ -48,18 +48,18 @@ namespace
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Construction
+// 构造
 //////////////////////////////////////////////////////////////////////////
 
 void SRichTextComposer::Construct(const FArguments& InArgs)
 {
 	PanelBrush = MakeShareable(new FSlateColorBrush(FLinearColor(0.02f, 0.02f, 0.025f, 0.55f)));
 
-	// Editor background: load the saved setting (near black by default, customizable)
+	// 编辑区背景色：读取上次保存设置（默认近黑，可自定义）
 	LoadEditorBackgroundColor();
 	EditorBrush = MakeShareable(new FSlateColorBrush(EditorBackgroundColor));
 
-	// Editor default style for untagged text (its color follows the background brightness so it stays readable)
+	// 编辑区默认样式：无标记文字使用它（文字颜色按背景亮度自动取反，避免看不清）
 	EditorTextStyle = FCoreStyle::Get().GetWidgetStyle<FTextBlockStyle>(TEXT("NormalText"));
 	EditorTextStyle.SetFontSize(14.0f);
 	EditorTextStyle.SetColorAndOpacity(FSlateColor(FLinearColor(0.92f, 0.92f, 0.92f)));
@@ -76,13 +76,13 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 	MarkupMarshaller->SetStyles(EditorStyleSet, EditorTextStyle);
 
 	Engine.SetPlainText(FString());
-	StatusMessage = LOCTEXT("InitialStatus", "Pick a style table -> edit text -> select text and click a style on the left");
+	StatusMessage = LOCTEXT("InitialStatus", "选择样式表 → 直接编辑文字 → 选中文字后点击左侧样式");
 
 	ChildSlot
 	[
 		SNew(SVerticalBox)
 
-		// ── Style table row ─────────────────────────────────
+		// ── 样式表选择行 ─────────────────────────────────
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(FMargin(6.0f, 6.0f, 6.0f, 3.0f))
@@ -95,7 +95,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 			.Padding(FMargin(0.0f, 0.0f, 6.0f, 0.0f))
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("TableLabel", "Style Table"))
+				.Text(LOCTEXT("TableLabel", "样式表"))
 				.Font(FAppStyle::GetFontStyle(TEXT("NormalFontBold")))
 			]
 
@@ -107,7 +107,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 				.OptionsSource(&TableItems)
 				.OnGenerateWidget(this, &SRichTextComposer::MakeTableComboBoxEntry)
 				.OnSelectionChanged(this, &SRichTextComposer::HandleTableSelected)
-				.ToolTipText(LOCTEXT("TableComboTip", "Lists only DataTables whose Row Structure is RichTextStyleRow"))
+				.ToolTipText(LOCTEXT("TableComboTip", "只列出 Row Structure = RichTextStyleRow 的数据表"))
 				[
 					SNew(STextBlock)
 					.Text(this, &SRichTextComposer::GetSelectedTableText)
@@ -122,9 +122,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 			[
 				SNew(SButton)
 				.OnClicked(this, &SRichTextComposer::HandleRefreshTablesClicked)
-				.ToolTipText(LOCTEXT("RefreshTip", "Rescan the project for RichTextStyleRow DataTables"))
+				.ToolTipText(LOCTEXT("RefreshTip", "重新扫描项目里所有 RichTextStyleRow 数据表"))
 				[
-					SNew(STextBlock).Text(LOCTEXT("Refresh", "Refresh"))
+					SNew(STextBlock).Text(LOCTEXT("Refresh", "刷新"))
 				]
 			]
 
@@ -141,14 +141,14 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 			]
 		]
 
-		// ── Body ─────────────────────────────────────────
+		// ── 主体 ─────────────────────────────────────────
 		+ SVerticalBox::Slot()
 		.FillHeight(1.0f)
 		.Padding(FMargin(6.0f, 3.0f, 6.0f, 6.0f))
 		[
 			SNew(SHorizontalBox)
 
-			// Left: style list
+			// 左：样式列表
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.Padding(FMargin(0.0f, 0.0f, 6.0f, 0.0f))
@@ -167,7 +167,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 						.Padding(FMargin(2.0f))
 						[
 							SNew(STextBlock)
-							.Text(LOCTEXT("StylesLabel", "Styles (click to apply to the selection)"))
+							.Text(LOCTEXT("StylesLabel", "样式（单击应用到选中文字）"))
 							.Font(FAppStyle::GetFontStyle(TEXT("SmallFontBold")))
 						]
 
@@ -193,9 +193,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleClearStyleClicked)
-								.ToolTipText(LOCTEXT("ClearStyleTip", "Clear the style of the selected text"))
+								.ToolTipText(LOCTEXT("ClearStyleTip", "清除选中文字的样式"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("ClearStyle", "Clear Style"))
+									SNew(STextBlock).Text(LOCTEXT("ClearStyle", "清除选中样式"))
 								]
 							]
 
@@ -205,9 +205,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleClearAllStylesClicked)
-								.ToolTipText(LOCTEXT("ClearAllStylesTip", "Clear all styles in the whole text"))
+								.ToolTipText(LOCTEXT("ClearAllStylesTip", "清除全文所有样式"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("ClearAllStyles", "Clear All Styles"))
+									SNew(STextBlock).Text(LOCTEXT("ClearAllStyles", "清除全部样式"))
 								]
 							]
 						]
@@ -215,14 +215,14 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 				]
 			]
 
-			// Right: WYSIWYG editor + output
+			// 右：所见即所得编辑区 + 输出
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			[
 				SNew(SVerticalBox)
 
-				// Editor (editable + live style rendering)
-				// The header and background controls stay on the panel color; the background only affects the text canvas below
+				// 编辑区（可编辑 + 实时样式渲染）
+				// 标题行与背景色控件留在面板底色上，背景色只作用于下方文字画布
 				+ SVerticalBox::Slot()
 				.FillHeight(1.0f)
 				[
@@ -238,7 +238,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							.FillWidth(1.0f)
 							[
 								SNew(STextBlock)
-								.Text(LOCTEXT("EditorLabel", "Editor (WYSIWYG: edit directly, styles render live)"))
+								.Text(LOCTEXT("EditorLabel", "编辑区（所见即所得：直接编辑，样式实时呈现）"))
 								.Font(FAppStyle::GetFontStyle(TEXT("SmallFontBold")))
 							]
 
@@ -262,7 +262,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							]
 						]
 
-						// Background: presets + custom color picker (written to the editor config so it persists)
+						// 背景色：预设色块 + 自定义取色器（写入编辑器配置，下次打开仍生效）
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.Padding(FMargin(2.0f, 0.0f, 2.0f, 4.0f))
@@ -275,7 +275,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							.Padding(FMargin(0.0f, 0.0f, 6.0f, 0.0f))
 							[
 								SNew(STextBlock)
-								.Text(LOCTEXT("BackgroundLabel", "Background"))
+								.Text(LOCTEXT("BackgroundLabel", "背景色"))
 								.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 8))
 								.ColorAndOpacity(FSlateColor(FLinearColor(0.60f, 0.60f, 0.60f)))
 							]
@@ -288,7 +288,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 								SNew(SButton)
 								.ContentPadding(1.0f)
 								.OnClicked(FOnClicked::CreateSP(this, &SRichTextComposer::HandleBackgroundPresetClicked, FLinearColor(0.02f, 0.02f, 0.02f)))
-								.ToolTipText(LOCTEXT("BgDarkBlack", "Near Black"))
+								.ToolTipText(LOCTEXT("BgDarkBlack", "近黑"))
 								[
 									SNew(SColorBlock).Color(FLinearColor(0.02f, 0.02f, 0.02f)).Size(FVector2D(16.0f, 12.0f)).UseSRGB(false)
 								]
@@ -302,7 +302,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 								SNew(SButton)
 								.ContentPadding(1.0f)
 								.OnClicked(FOnClicked::CreateSP(this, &SRichTextComposer::HandleBackgroundPresetClicked, FLinearColor(0.12f, 0.12f, 0.13f)))
-								.ToolTipText(LOCTEXT("BgDarkGray", "Dark Gray"))
+								.ToolTipText(LOCTEXT("BgDarkGray", "深灰"))
 								[
 									SNew(SColorBlock).Color(FLinearColor(0.12f, 0.12f, 0.13f)).Size(FVector2D(16.0f, 12.0f)).UseSRGB(false)
 								]
@@ -316,7 +316,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 								SNew(SButton)
 								.ContentPadding(1.0f)
 								.OnClicked(FOnClicked::CreateSP(this, &SRichTextComposer::HandleBackgroundPresetClicked, FLinearColor(0.35f, 0.35f, 0.36f)))
-								.ToolTipText(LOCTEXT("BgMidGray", "Mid Gray"))
+								.ToolTipText(LOCTEXT("BgMidGray", "中灰"))
 								[
 									SNew(SColorBlock).Color(FLinearColor(0.35f, 0.35f, 0.36f)).Size(FVector2D(16.0f, 12.0f)).UseSRGB(false)
 								]
@@ -330,7 +330,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 								SNew(SButton)
 								.ContentPadding(1.0f)
 								.OnClicked(FOnClicked::CreateSP(this, &SRichTextComposer::HandleBackgroundPresetClicked, FLinearColor(0.96f, 0.96f, 0.96f)))
-								.ToolTipText(LOCTEXT("BgLight", "Light"))
+								.ToolTipText(LOCTEXT("BgLight", "浅色"))
 								[
 									SNew(SColorBlock).Color(FLinearColor(0.96f, 0.96f, 0.96f)).Size(FVector2D(16.0f, 12.0f)).UseSRGB(false)
 								]
@@ -343,14 +343,14 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleCustomBackgroundClicked)
-								.ToolTipText(LOCTEXT("BgCustomTip", "Pick a custom editor background (remembered; light backgrounds switch the default text color to dark)"))
+								.ToolTipText(LOCTEXT("BgCustomTip", "用取色器自定义编辑区背景色（自动记住；浅色背景会自动把默认文字变成深色）"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("BgCustom", "Custom..."))
+									SNew(STextBlock).Text(LOCTEXT("BgCustom", "自定义…"))
 								]
 							]
 						]
 
-						// Text canvas: the background applies only here
+						// 文字画布：背景色只作用于这里
 						+ SVerticalBox::Slot()
 						.FillHeight(1.0f)
 						[
@@ -364,7 +364,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 									SAssignNew(TextEditor, SMultiLineEditableText)
 									.TextStyle(&EditorTextStyle)
 									.Marshaller(MarkupMarshaller)
-									.HintText(LOCTEXT("TextHint", "Type here. Select text and click a style on the left; new characters inherit the style at the caret..."))
+									.HintText(LOCTEXT("TextHint", "在此直接输入文本：选中文字后点左侧样式即可套用，输入的新字会继承所在位置的样式…"))
 									.AutoWrapText(true)
 									.AllowMultiLine(true)
 									.ClearTextSelectionOnFocusLoss(false)
@@ -376,7 +376,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 						]
 				]
 
-				// Output
+				// 输出
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				.Padding(FMargin(0.0f, 6.0f, 0.0f, 0.0f))
@@ -397,7 +397,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							.FillWidth(1.0f)
 							[
 								SNew(STextBlock)
-								.Text(LOCTEXT("OutputLabel", "Output (read-only, select all to copy)"))
+								.Text(LOCTEXT("OutputLabel", "输出（只读，可全选复制）"))
 								.Font(FAppStyle::GetFontStyle(TEXT("SmallFontBold")))
 							]
 
@@ -406,7 +406,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
-								.Text(LOCTEXT("Dirty", "● Changes not output yet"))
+								.Text(LOCTEXT("Dirty", "● 有改动未输出"))
 								.Visibility(TAttribute<EVisibility>::CreateSP(this, &SRichTextComposer::GetOutputDirtyVisibility))
 								.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 8))
 								.ColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.72f, 0.25f)))
@@ -440,9 +440,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleOutputClicked)
-								.ToolTipText(LOCTEXT("OutputTip", "Generate markup text usable by the engine RichTextBlock from the current editor content"))
+								.ToolTipText(LOCTEXT("OutputTip", "根据当前编辑区内容生成引擎 RichTextBlock 可用的标记文本"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("OutputButton", "Output Markup"))
+									SNew(STextBlock).Text(LOCTEXT("OutputButton", "输出 markup"))
 								]
 							]
 
@@ -452,9 +452,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleImportClicked)
-								.ToolTipText(LOCTEXT("ImportTip", "Read markup from the clipboard and parse it back into the editor"))
+								.ToolTipText(LOCTEXT("ImportTip", "读取剪贴板里的标记文本，反解析回编辑区继续修改"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("ImportButton", "Import Markup"))
+									SNew(STextBlock).Text(LOCTEXT("ImportButton", "从剪贴板导入标记"))
 								]
 							]
 
@@ -463,9 +463,9 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 							[
 								SNew(SButton)
 								.OnClicked(this, &SRichTextComposer::HandleClearTextClicked)
-								.ToolTipText(LOCTEXT("ClearTextTip", "Clear the editor text and styles"))
+								.ToolTipText(LOCTEXT("ClearTextTip", "清空编辑区文本与样式"))
 								[
-									SNew(STextBlock).Text(LOCTEXT("ClearText", "Clear Text"))
+									SNew(STextBlock).Text(LOCTEXT("ClearText", "清空文本"))
 								]
 							]
 						]
@@ -475,7 +475,7 @@ void SRichTextComposer::Construct(const FArguments& InArgs)
 		]
 	];
 
-	// Init: scan style tables -> initialize the editor from markup
+	// 初始化：扫描样式表 → 用标记文本初始化编辑区
 	RefreshTableList();
 	SetEditorMarkup(CurrentMarkup);
 	UpdateCaretStyleText();
@@ -490,7 +490,7 @@ void SRichTextComposer::AddReferencedObjects(FReferenceCollector& Collector)
 	if (SelectedTable != nullptr)
 	{
 #if RTC_ENGINE_OLDER_THAN(5, 7)
-		// Before 5.7 only the raw pointer overload exists (5.7+ requires TObjectPtr; raw pointers are unsafe with incremental GC)
+		// 5.7 之前只提供裸指针重载（5.7 起改为要求 TObjectPtr，否则增量 GC 下不安全）
 		UDataTable* TablePtr = SelectedTable;
 		Collector.AddReferencedObject(TablePtr);
 #else
@@ -505,7 +505,7 @@ FString SRichTextComposer::GetReferencerName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Style Table
+// 样式表
 //////////////////////////////////////////////////////////////////////////
 
 void SRichTextComposer::RefreshTableList()
@@ -543,7 +543,7 @@ void SRichTextComposer::RefreshTableList()
 		TableComboBox->RefreshOptions();
 	}
 
-	// Keep the current selection if possible, otherwise select the first table
+	// 尽量保持已有选择，否则默认选中第一张表
 	TSharedPtr<FAssetData> ToSelect;
 	if (SelectedTable != nullptr)
 	{
@@ -574,7 +574,7 @@ void SRichTextComposer::RefreshTableList()
 	{
 		SelectedTable = nullptr;
 		RebuildStyleEntries();
-		SetStatus(LOCTEXT("NoTables", "No DataTable with Row Structure = RichTextStyleRow was found. Create one: Content Browser -> right click -> Miscellaneous -> Data Table -> choose RichTextStyleRow"));
+		SetStatus(LOCTEXT("NoTables", "没有找到 Row Structure 为 RichTextStyleRow 的数据表：内容浏览器右键 → 其他 → 数据表 → 选 RichTextStyleRow"));
 	}
 }
 
@@ -592,8 +592,8 @@ FText SRichTextComposer::GetSelectedTableText() const
 		return FText::FromString(SelectedTable->GetName());
 	}
 	return (TableItems.Num() > 0)
-		? LOCTEXT("SelectTable", "Select a DataTable...")
-		: LOCTEXT("NoTableFound", "No RichTextStyleRow DataTable found");
+		? LOCTEXT("SelectTable", "请选择数据表…")
+		: LOCTEXT("NoTableFound", "未找到 RichTextStyleRow 数据表");
 }
 
 void SRichTextComposer::HandleTableSelected(TSharedPtr<FAssetData> InItem, ESelectInfo::Type SelectInfo)
@@ -608,7 +608,7 @@ void SRichTextComposer::HandleTableSelected(TSharedPtr<FAssetData> InItem, ESele
 	UDataTable* Table = LoadTableFromAssetData(*InItem);
 	if (Table == nullptr)
 	{
-		SetStatus(LOCTEXT("TableLoadFailed", "Failed to load the DataTable"));
+		SetStatus(LOCTEXT("TableLoadFailed", "数据表加载失败"));
 		return;
 	}
 
@@ -616,7 +616,7 @@ void SRichTextComposer::HandleTableSelected(TSharedPtr<FAssetData> InItem, ESele
 	{
 		SelectedTable = nullptr;
 		RebuildStyleEntries();
-		SetStatus(FText::Format(LOCTEXT("TableWrongStruct", "\"{0}\" is not a RichTextStyleRow DataTable and cannot be used"), FText::FromString(Table->GetName())));
+		SetStatus(FText::Format(LOCTEXT("TableWrongStruct", "「{0}」不是 RichTextStyleRow 结构的数据表，无法使用"), FText::FromString(Table->GetName())));
 		return;
 	}
 
@@ -692,18 +692,18 @@ void SRichTextComposer::RebuildStyleEntries()
 		}
 
 		SetStatus(InvalidCount > 0
-			? FText::Format(LOCTEXT("LoadedWithInvalid", "Loaded {0} styles; {1} row name(s) are invalid and cannot be used as markup"), FText::AsNumber(StyleItems.Num()), FText::AsNumber(InvalidCount))
-			: FText::Format(LOCTEXT("Loaded", "Loaded {0} styles"), FText::AsNumber(StyleItems.Num())));
+			? FText::Format(LOCTEXT("LoadedWithInvalid", "已载入 {0} 个样式，其中 {1} 个行名非法（无法用于标记）"), FText::AsNumber(StyleItems.Num()), FText::AsNumber(InvalidCount))
+			: FText::Format(LOCTEXT("Loaded", "已载入 {0} 个样式"), FText::AsNumber(StyleItems.Num())));
 	}
 	else
 	{
-		SetStatus(LOCTEXT("NoTable", "Select a RichTextStyleRow DataTable"));
+		SetStatus(LOCTEXT("NoTable", "请选择一张 RichTextStyleRow 数据表"));
 	}
 }
 
 void SRichTextComposer::RebuildEditorStyleSet()
 {
-	// Row name -> FTextBlockStyle: the editor renders with this, matching runtime RichTextBlock resolution
+	// 行名 → FTextBlockStyle：编辑区按此渲染，与运行时 RichTextBlock 的解析机制一致
 	EditorStyleSet = MakeShareable(new FSlateStyleSet(TEXT("RichTextComposerEditor")));
 	EditorStyleSet->SetParentStyleName(FAppStyle::GetAppStyleSetName());
 
@@ -719,14 +719,14 @@ void SRichTextComposer::RebuildEditorStyleSet()
 	{
 		MarkupMarshaller->SetStyles(EditorStyleSet, EditorTextStyle);
 
-		// Mark dirty -> the engine re-marshals with the new styles on the next tick (keeping caret and selection)
+		// 标记为脏 → 下一次 Tick 时引擎会用新样式重新排版（并保留光标与选区）
 		MarkupMarshaller->MakeDirty();
 		RequestEditorTick();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Style list
+// 样式列表
 //////////////////////////////////////////////////////////////////////////
 
 TSharedRef<ITableRow> SRichTextComposer::OnGenerateStyleRow(TSharedPtr<FRichTextComposerStyleItem> InItem, const TSharedRef<STableViewBase>& OwnerTable)
@@ -737,8 +737,8 @@ TSharedRef<ITableRow> SRichTextComposer::OnGenerateStyleRow(TSharedPtr<FRichText
 		: FSlateColor(FLinearColor(0.45f, 0.45f, 0.45f));
 
 	const FText ToolTip = InItem->bValidName
-		? FText::Format(LOCTEXT("StyleRowTip", "Style row \"{0}\"\nClick to apply it to the selected text\nOutput markup: <{0}>content</>"), FText::FromName(InItem->RowName))
-		: FText::Format(LOCTEXT("StyleRowInvalidTip", "Row name \"{0}\" cannot be used as markup: {1}"), FText::FromName(InItem->RowName), FRichTextMarkupRules::GetNameRequirementText());
+		? FText::Format(LOCTEXT("StyleRowTip", "样式行「{0}」\n单击应用到编辑区里选中的文字\n输出标记：<{0}>内容</>"), FText::FromName(InItem->RowName))
+		: FText::Format(LOCTEXT("StyleRowInvalidTip", "行名「{0}」不能用作标记：{1}"), FText::FromName(InItem->RowName), FRichTextMarkupRules::GetNameRequirementText());
 
 	return SNew(STableRow<TSharedPtr<FRichTextComposerStyleItem>>, OwnerTable)
 		.Padding(FMargin(4.0f, 2.0f))
@@ -778,7 +778,7 @@ void SRichTextComposer::HandleStyleSelectionChanged(TSharedPtr<FRichTextComposer
 
 	ApplyStyleToSelection(InItem->RowName);
 
-	// Clear the list selection so the same style can be clicked again for a new selection
+	// 清掉列表选中态，方便再次点击同一样式应用到新的选区
 	if (StyleListView.IsValid())
 	{
 		StyleListView->ClearSelection();
@@ -789,22 +789,22 @@ FText SRichTextComposer::GetStyleSampleFontWarning(const FRichTextComposerStyleI
 {
 	if (!Item.bValidName)
 	{
-		return LOCTEXT("InvalidRowName", "Invalid row name");
+		return LOCTEXT("InvalidRowName", "行名非法");
 	}
 	if (Item.Style.Font.Size <= 0.0f)
 	{
-		return LOCTEXT("NoFontSize", "No font size");
+		return LOCTEXT("NoFontSize", "未设字号");
 	}
 	return FText::FromString(FString::Printf(TEXT("%.0fpt"), Item.Style.Font.Size));
 }
 
 //////////////////////////////////////////////////////////////////////////
-// WYSIWYG editor
+// 所见即所得编辑区
 //////////////////////////////////////////////////////////////////////////
 
 void SRichTextComposer::HandleMarkupTextChanged(const FText& NewMarkup)
 {
-	// The editor serializes through the marshaller, so the reported text is markup
+	// 编辑区通过 Marshaller 反向序列化，传出的是标记文本
 	const FString Markup = FRichTextMarkupRules::NormalizeLineEndings(NewMarkup.ToString());
 	if (Markup == CurrentMarkup)
 	{
@@ -817,7 +817,7 @@ void SRichTextComposer::HandleMarkupTextChanged(const FText& NewMarkup)
 	MarkOutputDirty();
 	UpdateCaretStyleText();
 
-	SetStatus(FText::Format(LOCTEXT("TextChanged", "Text updated ({0} characters); changes not output yet"), FText::AsNumber(Engine.GetPlainText().Len())));
+	SetStatus(FText::Format(LOCTEXT("TextChanged", "文本已更新（共 {0} 字），改动尚未输出"), FText::AsNumber(Engine.GetPlainText().Len())));
 }
 
 void SRichTextComposer::HandleCursorMoved(const FTextLocation& InLocation)
@@ -833,7 +833,7 @@ void SRichTextComposer::SetEditorMarkup(const FString& InMarkup)
 
 	if (TextEditor.IsValid())
 	{
-		// SetText re-marshals on the next tick; the engine preserves the caret internally
+		// SetText 会在下一次 Tick 重排版，引擎内部会保留光标位置
 		TextEditor->SetText(FText::FromString(CurrentMarkup));
 		RequestEditorTick();
 	}
@@ -846,7 +846,7 @@ void SRichTextComposer::RequestEditorTick()
 {
 	if (TextEditor.IsValid())
 	{
-		// Register a one-shot active timer so the editor processes text/style changes on the next tick
+		// 注册一次性活动计时器：保证编辑区在下一次 Tick 处理文本/样式变更
 		TextEditor->RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &SRichTextComposer::HandleEditorTick));
 	}
 }
@@ -882,7 +882,7 @@ bool SRichTextComposer::CursorLocationToPlainIndex(const FTextLocation& Location
 	int32 Index = 0;
 	for (int32 i = 0; i < LineIndex; ++i)
 	{
-		Index += Lines[i].Len() + 1; // +1 for '\n'
+		Index += Lines[i].Len() + 1; // +1 为 '\n'
 	}
 
 	const int32 LineLen = (Lines.Num() > 0) ? Lines[LineIndex].Len() : 0;
@@ -924,8 +924,8 @@ void SRichTextComposer::UpdateCaretStyleText()
 		{
 			const FName StyleAtCaret = Engine.GetStyleAt(Index);
 			NewText = StyleAtCaret.IsNone()
-				? LOCTEXT("CaretDefaultStyle", "Caret: default style")
-				: FText::Format(LOCTEXT("CaretStyle", "Caret style: {0}"), FText::FromName(StyleAtCaret));
+				? LOCTEXT("CaretDefaultStyle", "光标处：默认样式")
+				: FText::Format(LOCTEXT("CaretStyle", "光标处样式：{0}"), FText::FromName(StyleAtCaret));
 		}
 	}
 
@@ -942,24 +942,24 @@ void SRichTextComposer::ApplyStyleToSelection(FName StyleName)
 	int32 End = 0;
 	if (!GetSelectionRange(Start, End))
 	{
-		SetStatus(LOCTEXT("NeedSelection", "Select some text in the editor first"));
+		SetStatus(LOCTEXT("NeedSelection", "请先在编辑区里用鼠标选中要套用样式的文字"));
 		return;
 	}
 
 	if (!StyleName.IsNone() && !FRichTextMarkupRules::IsValidStyleName(StyleName))
 	{
-		SetStatus(FText::Format(LOCTEXT("InvalidName", "Row name \"{0}\" cannot be used as markup: {1}"), FText::FromName(StyleName), FRichTextMarkupRules::GetNameRequirementText()));
+		SetStatus(FText::Format(LOCTEXT("InvalidName", "行名「{0}」不能用作标记：{1}"), FText::FromName(StyleName), FRichTextMarkupRules::GetNameRequirementText()));
 		return;
 	}
 
-	// Rebuild the model from the editor current markup, then apply the style (styling only changes tags, never the text)
+	// 以编辑区当前标记为准重建模型，再套用样式（样式只改标记，不改动文字本身）
 	Engine.SetMarkupText(CurrentMarkup);
 	Engine.ApplyStyleToRange(Start, End, StyleName);
 	SetEditorMarkup(Engine.GetMarkupText());
 
 	SetStatus(StyleName.IsNone()
-		? FText::Format(LOCTEXT("ClearedRange", "Cleared the style of characters {0}-{1}"), FText::AsNumber(Start), FText::AsNumber(End))
-		: FText::Format(LOCTEXT("Applied", "Applied style \"{2}\" to characters {0}-{1}"), FText::AsNumber(Start), FText::AsNumber(End), FText::FromName(StyleName)));
+		? FText::Format(LOCTEXT("ClearedRange", "已清除第 {0}~{1} 个字符的样式"), FText::AsNumber(Start), FText::AsNumber(End))
+		: FText::Format(LOCTEXT("Applied", "已对第 {0}~{1} 个字符应用样式「{2}」"), FText::AsNumber(Start), FText::AsNumber(End), FText::FromName(StyleName)));
 }
 
 void SRichTextComposer::RecomputeUnknownStyles()
@@ -973,7 +973,7 @@ void SRichTextComposer::MarkOutputDirty()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Editor background
+// 编辑区背景色
 //////////////////////////////////////////////////////////////////////////
 
 void SRichTextComposer::LoadEditorBackgroundColor()
@@ -992,7 +992,7 @@ void SRichTextComposer::LoadEditorBackgroundColor()
 
 void SRichTextComposer::UpdateDefaultTextColorForBackground()
 {
-	// Bright text on dark backgrounds, dark text on light ones, so untagged text stays readable
+	// 深色背景用亮字、浅色背景用深字，避免自定义背景后看不清无标记文字
 	const FLinearColor DefaultTextColor = (EditorBackgroundColor.GetLuminance() > 0.5f)
 		? FLinearColor(0.08f, 0.08f, 0.09f)
 		: FLinearColor(0.92f, 0.92f, 0.92f);
@@ -1006,7 +1006,7 @@ void SRichTextComposer::UpdateDefaultTextColorForBackground()
 
 	if (TextEditor.IsValid())
 	{
-		// The engine caches a copy of the style, so push it back once; it re-marshals and keeps the caret
+		// 引擎会缓存样式副本，必须回灌一次；内部会重排并保留光标
 		TextEditor->SetTextStyle(&EditorTextStyle);
 		RequestEditorTick();
 	}
@@ -1031,7 +1031,7 @@ void SRichTextComposer::SetEditorBackgroundColor(FLinearColor InColor, bool bSav
 
 	Invalidate(EInvalidateWidgetReason::Paint);
 
-	SetStatus(FText::Format(LOCTEXT("BackgroundChanged", "Editor background updated and saved: {0}"), FText::FromString(EditorBackgroundColor.ToString())));
+	SetStatus(FText::Format(LOCTEXT("BackgroundChanged", "编辑区背景色已更新并保存：{0}"), FText::FromString(EditorBackgroundColor.ToString())));
 }
 
 FReply SRichTextComposer::HandleBackgroundPresetClicked(FLinearColor InColor)
@@ -1063,7 +1063,7 @@ FReply SRichTextComposer::HandleCustomBackgroundClicked()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Buttons
+// 按钮
 //////////////////////////////////////////////////////////////////////////
 
 FReply SRichTextComposer::HandleRefreshTablesClicked()
@@ -1083,7 +1083,7 @@ FReply SRichTextComposer::HandleClearAllStylesClicked()
 	Engine.SetMarkupText(CurrentMarkup);
 	Engine.ClearAllStyles();
 	SetEditorMarkup(Engine.GetMarkupText());
-	SetStatus(LOCTEXT("ClearedAll", "Cleared all styles"));
+	SetStatus(LOCTEXT("ClearedAll", "已清除全部样式"));
 	return FReply::Handled();
 }
 
@@ -1096,7 +1096,7 @@ FReply SRichTextComposer::HandleOutputClicked()
 	}
 
 	bOutputDirty = false;
-	SetStatus(FText::Format(LOCTEXT("OutputDone", "Generated markup ({0} characters); select it in the output box to copy"), FText::AsNumber(Markup.Len())));
+	SetStatus(FText::Format(LOCTEXT("OutputDone", "已输出标记文本（{0} 字符），可在输出框内全选复制"), FText::AsNumber(Markup.Len())));
 	return FReply::Handled();
 }
 
@@ -1104,7 +1104,7 @@ FReply SRichTextComposer::HandleClearTextClicked()
 {
 	Engine.SetPlainText(FString());
 	SetEditorMarkup(Engine.GetMarkupText());
-	SetStatus(LOCTEXT("TextCleared", "Editor cleared"));
+	SetStatus(LOCTEXT("TextCleared", "编辑区已清空"));
 	return FReply::Handled();
 }
 
@@ -1114,7 +1114,7 @@ FReply SRichTextComposer::HandleImportClicked()
 	FPlatformApplicationMisc::ClipboardPaste(Clipboard);
 	if (Clipboard.TrimStartAndEnd().IsEmpty())
 	{
-		SetStatus(LOCTEXT("ClipboardEmpty", "Clipboard is empty. Copy some markup first, e.g. <Title>Title</>"));
+		SetStatus(LOCTEXT("ClipboardEmpty", "剪贴板为空：请先复制一段富文本标记，例如 <Title>标题</>"));
 		return FReply::Handled();
 	}
 
@@ -1124,19 +1124,19 @@ FReply SRichTextComposer::HandleImportClicked()
 	FString Note;
 	if (Engine.HadDroppedAttributes())
 	{
-		Note += TEXT(" (markup attributes ignored)");
+		Note += TEXT("（已忽略标记上的属性）");
 	}
 	if (Engine.HadUnrecognizedMarkup())
 	{
-		Note += TEXT(" (unrecognized '<' fragments were kept as plain text)");
+		Note += TEXT("（有无法识别的 '<' 片段，已按普通文字处理）");
 	}
 
-	SetStatus(FText::Format(LOCTEXT("Imported", "Imported and parsed markup ({0} characters){1}"), FText::AsNumber(Engine.GetPlainText().Len()), FText::FromString(Note)));
+	SetStatus(FText::Format(LOCTEXT("Imported", "已导入并反解析标记文本（共 {0} 字）{1}"), FText::AsNumber(Engine.GetPlainText().Len()), FText::FromString(Note)));
 	return FReply::Handled();
 }
 
 //////////////////////////////////////////////////////////////////////////
-// State
+// 状态
 //////////////////////////////////////////////////////////////////////////
 
 void SRichTextComposer::SetStatus(const FText& InStatus)
@@ -1165,13 +1165,13 @@ FText SRichTextComposer::GetTextStatsText() const
 	}
 
 	FText Stats = FText::Format(
-		LOCTEXT("TextStats", "{0} chars · {1} styled runs"),
+		LOCTEXT("TextStats", "共 {0} 字 · {1} 处样式"),
 		FText::AsNumber(Engine.GetPlainText().Len()),
 		FText::AsNumber(StyledRunCount));
 
 	if (UnknownStyles.Num() > 0)
 	{
-		Stats = FText::Format(LOCTEXT("TextStatsUnknown", "{0} · {1} style name(s) not in the current table"), Stats, FText::AsNumber(UnknownStyles.Num()));
+		Stats = FText::Format(LOCTEXT("TextStatsUnknown", "{0} · {1} 个样式名不在当前表中"), Stats, FText::AsNumber(UnknownStyles.Num()));
 	}
 
 	return Stats;

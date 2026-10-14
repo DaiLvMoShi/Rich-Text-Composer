@@ -12,9 +12,9 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 /**
- * Core logic tests for Rich Text Composer: plain text <-> markup conversion, range style replacement,
- * per-line splitting, escaping, typing inheritance, invalid row names and reverse parsing.
- * Run it from the command line:
+ * Rich Text Composer 核心逻辑测试：纯文本 ↔ 标记 的转换、区间样式替换、
+ * 跨行拆分、转义、打字继承、非法行名与反解析行为。
+ * 命令行运行：
  *   UnrealEditor-Cmd.exe <Project>.uproject -ExecCmds="Automation RunTests RichTextComposer" -TestExit="Automation Test Queue Empty" -unattended -nopause -nullrhi
  */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRichTextComposerMarkupTest, "RichTextComposer.Markup.Engine",
@@ -22,105 +22,105 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRichTextComposerMarkupTest, "RichTextComposer.
 
 bool FRichTextComposerMarkupTest::RunTest(const FString& Parameters)
 {
-	// 1) plain text -> markup
+	// 1) 纯文本 → 标记
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(TEXT("Hello World"));
 		Engine.ApplyStyleToRange(0, 5, TEXT("Title"));
-		TestEqual(TEXT("basic markup output"), Engine.GetMarkupText(), FString(TEXT("<Title>Hello</> World")));
+		TestEqual(TEXT("基本标记输出"), Engine.GetMarkupText(), FString(TEXT("<Title>Hello</> World")));
 	}
 
-	// 2) reverse parse round-trip
+	// 2) 反解析往返一致
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetMarkupText(TEXT("<Title>Hello</> World"));
-		TestEqual(TEXT("plain text from reverse parse"), Engine.GetPlainText(), FString(TEXT("Hello World")));
-		TestEqual(TEXT("markup re-serialized after reverse parse"), Engine.GetMarkupText(), FString(TEXT("<Title>Hello</> World")));
+		TestEqual(TEXT("反解析得到的纯文本"), Engine.GetPlainText(), FString(TEXT("Hello World")));
+		TestEqual(TEXT("反解析后重新输出"), Engine.GetMarkupText(), FString(TEXT("<Title>Hello</> World")));
 	}
 
-	// 3) overlapping ranges are replaced while untouched parts are kept
+	// 3) 重叠区间按“替换”处理，并保留未重叠部分
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetMarkupText(TEXT("<Title>Hello</> World"));
 		Engine.ApplyStyleToRange(3, 8, TEXT("Warning"));
-		TestEqual(TEXT("overlapping range replaced"), Engine.GetMarkupText(), FString(TEXT("<Title>Hel</><Warning>lo Wo</>rld")));
+		TestEqual(TEXT("重叠区间替换"), Engine.GetMarkupText(), FString(TEXT("<Title>Hel</><Warning>lo Wo</>rld")));
 	}
 
-	// 4) multi-line ranges split into one tag per line
+	// 4) 跨行区间按行拆成多个标记
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(TEXT("ab\ncd"));
 		Engine.ApplyStyleToRange(0, 5, TEXT("Note"));
-		TestEqual(TEXT("multi-line range split per line"), Engine.GetMarkupText(), FString(TEXT("<Note>ab</>\n<Note>cd</>")));
+		TestEqual(TEXT("跨行按行拆分标记"), Engine.GetMarkupText(), FString(TEXT("<Note>ab</>\n<Note>cd</>")));
 	}
 
-	// 5) escaping and round-trip
+	// 5) 特殊字符转义与往返
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(TEXT("a<b>&\"c"));
 		Engine.ApplyStyleToRange(0, 7, TEXT("Code"));
-		TestEqual(TEXT("special characters escaped"), Engine.GetMarkupText(), FString(TEXT("<Code>a&lt;b&gt;&amp;&quot;c</>")));
+		TestEqual(TEXT("特殊字符转义"), Engine.GetMarkupText(), FString(TEXT("<Code>a&lt;b&gt;&amp;&quot;c</>")));
 
 		FRichTextMarkupEngine Round;
 		Round.SetMarkupText(Engine.GetMarkupText());
-		TestEqual(TEXT("escape round-trip"), Round.GetPlainText(), FString(TEXT("a<b>&\"c")));
+		TestEqual(TEXT("转义往返"), Round.GetPlainText(), FString(TEXT("a<b>&\"c")));
 	}
 
-	// 6) typing and deleting inside styled text
+	// 6) 在已套样式的文字中继续输入 / 删除
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(TEXT("Hello"));
 		Engine.ApplyStyleToRange(0, 5, TEXT("Title"));
 		Engine.ApplyTextEdit(TEXT("HelloX"));
-		TestEqual(TEXT("inserted text inherits style"), Engine.GetMarkupText(), FString(TEXT("<Title>HelloX</>")));
+		TestEqual(TEXT("插入继承样式"), Engine.GetMarkupText(), FString(TEXT("<Title>HelloX</>")));
 
 		Engine.ApplyTextEdit(TEXT("HelX"));
-		TestEqual(TEXT("markup still correct after deletion"), Engine.GetMarkupText(), FString(TEXT("<Title>HelX</>")));
+		TestEqual(TEXT("删除后标记仍正确"), Engine.GetMarkupText(), FString(TEXT("<Title>HelX</>")));
 	}
 
-	// 7) invalid row names (spaces, etc.) produce no markup
+	// 7) 非法行名（含空格等）不生成标记
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(TEXT("Test"));
-		TestFalse(TEXT("row name with a space is invalid"), FRichTextMarkupRules::IsValidStyleName(FName(TEXT("Bad Name"))));
-		TestTrue(TEXT("normal row name is valid"), FRichTextMarkupRules::IsValidStyleName(FName(TEXT("Title_01.x-y"))));
+		TestFalse(TEXT("含空格行名非法"), FRichTextMarkupRules::IsValidStyleName(FName(TEXT("Bad Name"))));
+		TestTrue(TEXT("常规行名合法"), FRichTextMarkupRules::IsValidStyleName(FName(TEXT("Title_01.x-y"))));
 
 		Engine.ApplyStyleToRange(0, 4, FName(TEXT("Bad Name")));
-		TestEqual(TEXT("invalid row name produces no markup"), Engine.GetMarkupText(), FString(TEXT("Test")));
+		TestEqual(TEXT("非法行名不产生标记"), Engine.GetMarkupText(), FString(TEXT("Test")));
 	}
 
-	// 8) reverse parse: attributes are ignored, non-style tags become literal text
+	// 8) 反解析：属性被忽略；非样式标记按字面文字处理
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetMarkupText(TEXT("<Title key=\"v\">Hi</>"));
-		TestEqual(TEXT("markup attributes ignored"), Engine.GetMarkupText(), FString(TEXT("<Title>Hi</>")));
-		TestTrue(TEXT("attributes-dropped flag recorded"), Engine.HadDroppedAttributes());
+		TestEqual(TEXT("标记属性被忽略"), Engine.GetMarkupText(), FString(TEXT("<Title>Hi</>")));
+		TestTrue(TEXT("记录了属性丢弃"), Engine.HadDroppedAttributes());
 
 		FRichTextMarkupEngine Unknown;
 		Unknown.SetMarkupText(TEXT("a<img src=\"x\"/>b"));
-		TestEqual(TEXT("self-closing tag kept as literal text"), Unknown.GetPlainText(), FString(TEXT("a<img src=\"x\"/>b")));
-		TestTrue(TEXT("unrecognized-markup flag recorded"), Unknown.HadUnrecognizedMarkup());
+		TestEqual(TEXT("自闭合标签按字面处理"), Unknown.GetPlainText(), FString(TEXT("a<img src=\"x\"/>b")));
+		TestTrue(TEXT("记录了未识别标记"), Unknown.HadUnrecognizedMarkup());
 	}
 
-	// 9) clearing styles
+	// 9) 清除样式
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetMarkupText(TEXT("<A>one</>two<B>three</>"));
 		Engine.ClearAllStyles();
-		TestEqual(TEXT("Clear All Styles"), Engine.GetMarkupText(), FString(TEXT("onetwothree")));
+		TestEqual(TEXT("清除全部样式"), Engine.GetMarkupText(), FString(TEXT("onetwothree")));
 	}
 
-	// 10) empty text and style queries
+	// 10) 空文本与纯样式查询
 	{
 		FRichTextMarkupEngine Engine;
 		Engine.SetPlainText(FString());
-		TestEqual(TEXT("empty text yields empty output"), Engine.GetMarkupText(), FString());
-		TestTrue(TEXT("empty text has no style"), Engine.GetStyleAt(0).IsNone());
+		TestEqual(TEXT("空文本输出为空"), Engine.GetMarkupText(), FString());
+		TestTrue(TEXT("空文本无样式"), Engine.GetStyleAt(0).IsNone());
 	}
 
-	// 11) the WYSIWYG editor marshaller: per-run parsing, reverse serialization, style inheritance while typing
-	// The APIs used here (FSlateTextLayout::Create / FSlateTextRun::Create / FTextLayout::InsertAt /
-	// GetLineModels / FRunModel::AppendTextTo) were checked against the official API docs: identical in 5.2 and 5.7/5.8.
+	// 11) 所见即所得编辑区的 Marshaller：按运行段解析、反向序列化、打字继承样式
+	// 本段用到的 API（FSlateTextLayout::Create / FSlateTextRun::Create / FTextLayout::InsertAt /
+	// GetLineModels / FRunModel::AppendTextTo）经官方 API 文档核对，5.2 与 5.7/5.8 完全一致。
 	{
 		const FTextBlockStyle DefaultStyle = FCoreStyle::Get().GetWidgetStyle<FTextBlockStyle>(TEXT("NormalText"));
 
@@ -139,39 +139,39 @@ bool FRichTextComposerMarkupTest::RunTest(const FString& Parameters)
 		Marshaller->SetText(TEXT("<Title>Hi</> there"), *Layout);
 
 		const TArray<FTextLayout::FLineModel>& Lines = Layout->GetLineModels();
-		TestEqual(TEXT("single line: line count"), Lines.Num(), 1);
+		TestEqual(TEXT("单行解析行数"), Lines.Num(), 1);
 		if (Lines.Num() == 1)
 		{
-			TestEqual(TEXT("single line: run count"), Lines[0].Runs.Num(), 2);
-			TestEqual(TEXT("model plain text"), *Lines[0].Text, FString(TEXT("Hi there")));
-			TestEqual(TEXT("first run tag name"), Lines[0].Runs[0].GetRun()->GetRunInfo().Name, FString(TEXT("Title")));
-			TestEqual(TEXT("second run has no tag"), Lines[0].Runs[1].GetRun()->GetRunInfo().Name, FString());
+			TestEqual(TEXT("单行运行段数"), Lines[0].Runs.Num(), 2);
+			TestEqual(TEXT("模型纯文本"), *Lines[0].Text, FString(TEXT("Hi there")));
+			TestEqual(TEXT("首个运行段标记名"), Lines[0].Runs[0].GetRun()->GetRunInfo().Name, FString(TEXT("Title")));
+			TestEqual(TEXT("第二个运行段无标记"), Lines[0].Runs[1].GetRun()->GetRunInfo().Name, FString());
 		}
 
 		FString RoundTrip;
 		Marshaller->GetText(RoundTrip, *Layout);
-		TestEqual(TEXT("editor markup re-serialized"), RoundTrip, FString(TEXT("<Title>Hi</> there")));
+		TestEqual(TEXT("编辑区标记反向序列化"), RoundTrip, FString(TEXT("<Title>Hi</> there")));
 
-		// Insert inside a styled run -> the run is extended and the style is inherited
+		// 光标在带样式的运行段内插入 → 运行段被扩充，样式自动继承
 		Layout->InsertAt(FTextLocation(0, 1), TEXT("X"));
 		FString AfterInsert;
 		Marshaller->GetText(AfterInsert, *Layout);
-		TestEqual(TEXT("insert inherits the run style at the caret"), AfterInsert, FString(TEXT("<Title>HXi</> there")));
+		TestEqual(TEXT("插入继承所在运行段样式"), AfterInsert, FString(TEXT("<Title>HXi</> there")));
 
-		// Insert inside an unstyled run -> stays unstyled
+		// 光标在无样式运行段内插入 → 保持无样式
 		Layout->InsertAt(FTextLocation(0, 7), TEXT("Y"));
 		FString AfterInsert2;
 		Marshaller->GetText(AfterInsert2, *Layout);
-		TestEqual(TEXT("insert in an unstyled run stays unstyled"), AfterInsert2, FString(TEXT("<Title>HXi</> theYre")));
+		TestEqual(TEXT("无样式处插入保持无样式"), AfterInsert2, FString(TEXT("<Title>HXi</> theYre")));
 
-		// multi-line
+		// 多行
 		TSharedRef<FSlateTextLayout> MultiLineLayout = FSlateTextLayout::Create(&OwnerWidget.Get(), DefaultStyle);
 		Marshaller->SetText(TEXT("<Title>ab</>\ncd"), *MultiLineLayout);
-		TestEqual(TEXT("multi-line: line count"), MultiLineLayout->GetLineModels().Num(), 2);
+		TestEqual(TEXT("多行解析行数"), MultiLineLayout->GetLineModels().Num(), 2);
 
 		FString MultiRoundTrip;
 		Marshaller->GetText(MultiRoundTrip, *MultiLineLayout);
-		TestEqual(TEXT("multi-line markup round-trip"), MultiRoundTrip, FString(TEXT("<Title>ab</>\ncd")));
+		TestEqual(TEXT("多行标记往返"), MultiRoundTrip, FString(TEXT("<Title>ab</>\ncd")));
 	}
 
 	return true;

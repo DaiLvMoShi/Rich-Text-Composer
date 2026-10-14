@@ -20,7 +20,7 @@ void FRichTextComposerModule::StartupModule()
 		RichTextComposerTabName,
 		FOnSpawnTab::CreateRaw(this, &FRichTextComposerModule::SpawnComposerTab))
 		.SetDisplayName(LOCTEXT("TabTitle", "Rich Text Composer"))
-		.SetTooltipText(LOCTEXT("TabTooltip", "Pick a RichTextStyleRow DataTable, assign styles to text and output markup"))
+		.SetTooltipText(LOCTEXT("TabTooltip", "选择 RichTextStyleRow 数据表，为文本分配样式并输出富文本标记"))
 		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Color"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
@@ -57,19 +57,19 @@ void FRichTextComposerModule::RegisterMenus()
 
 	const FSlateIcon ComposerIcon(FAppStyle::GetAppStyleSetName(), "Icons.Color");
 
-	// Main menu: Window -> Rich Text Composer
+	// 主菜单：Window → Rich Text Composer
 	if (UToolMenu* WindowMenu = UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.MainMenu.Window")))
 	{
 		FToolMenuSection& Section = WindowMenu->FindOrAddSection(TEXT("WindowLayout"));
 		Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 			TEXT("OpenRichTextComposer"),
 			LOCTEXT("WindowMenuEntry", "Rich Text Composer"),
-			LOCTEXT("WindowMenuEntryTip", "Open the rich text style composer (outputs RichTextBlock markup)"),
+			LOCTEXT("WindowMenuEntryTip", "打开富文本样式编排工具（输出 RichTextBlock 标记）"),
 			ComposerIcon,
 			FUIAction(FExecuteAction::CreateStatic(&FRichTextComposerModule::OpenComposerTab))));
 	}
 
-	// Level editor toolbar button
+	// 关卡编辑器工具栏按钮
 	if (UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.LevelEditorToolBar.PlayToolBar")))
 	{
 		FToolMenuSection& Section = ToolbarMenu->FindOrAddSection(TEXT("RichTextComposerSection"));
@@ -77,7 +77,7 @@ void FRichTextComposerModule::RegisterMenus()
 			TEXT("RichTextComposerButton"),
 			FUIAction(FExecuteAction::CreateStatic(&FRichTextComposerModule::OpenComposerTab)),
 			LOCTEXT("ToolbarButton", "Rich Text"),
-			LOCTEXT("ToolbarButtonTip", "Rich Text Composer: assign rich text styles visually and output markup"),
+			LOCTEXT("ToolbarButtonTip", "Rich Text Composer：可视化分配富文本样式并输出标记"),
 			ComposerIcon));
 	}
 }
